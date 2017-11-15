@@ -1,11 +1,13 @@
 from distutils.core import setup
 
 setup(
-    name='gitric',
+    name='ds-gitric',
     version='0.4',
-    description='simple git-based deployment for fabric',
+    description='A fork of gitric. With my customizations.',
     author='Dan Bravender',
     author_email='dan.bravender@gmail.com',
+    maintainer='dhilipsiva',
+    maintainer_email='dhilipsiva@gmail.com',
     url='http://dan.bravender.us',
-    download_url='http://github.com/dbravender/gitric/tarball/0.4',
-    packages=['gitric'])
+    packages=['gitric']
+)
