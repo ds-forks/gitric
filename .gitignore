@@ -2,4 +2,4 @@
 /MANIFEST
 *pyc
 .env
-*.egg/*
+*.egg-info/*
