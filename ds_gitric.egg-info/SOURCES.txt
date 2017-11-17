@@ -1,7 +1,0 @@
-README.md
-ds_gitric.egg-info/PKG-INFO
-ds_gitric.egg-info/SOURCES.txt
-ds_gitric.egg-info/dependency_links.txt
-ds_gitric.egg-info/top_level.txt
-gitric/__init__.py
-gitric/api.py
