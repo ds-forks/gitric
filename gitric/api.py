@@ -1,8 +1,12 @@
+from os import getcwd
+
 from fabric.state import env
 from fabric.colors import green
 from fabric.contrib.files import exists
-from fabric.context_managers import settings
+from fabric.context_managers import settings, lcd
 from fabric.api import cd, run, puts, task, abort, local
+
+cwd = getcwd()
 
 
 @task
@@ -46,13 +50,14 @@ def git_init(repo_path):
         run('git config receive.denyCurrentBranch ignore')
 
 
-def git_seed(repo_path, commit=None, ignore_untracked_files=False):
+def git_seed(
+         repo_path, commit=None, ignore_untracked_files=False, git_src=cwd):
     """
     seed a git repository (and create if necessary) [remote]
     """
 
     # check if the local repository is dirty
-    dirty_working_copy = git_is_dirty(ignore_untracked_files)
+    dirty_working_copy = git_is_dirty(ignore_untracked_files, git_src)
     if dirty_working_copy:
         abort(
             'Working copy is dirty. This check can be overridden by\n'
@@ -63,7 +68,7 @@ def git_seed(repo_path, commit=None, ignore_untracked_files=False):
     git_init(repo_path)
 
     # use specified commit or HEAD
-    commit = commit or git_head_rev()
+    commit = commit or git_head_rev(git_src)
 
     # push the commit to the remote repository
     #
@@ -74,9 +79,11 @@ def git_seed(repo_path, commit=None, ignore_untracked_files=False):
 
     with settings(warn_only=True):
         force = ('gitric_force_push' in env) and '-f' or ''
-        push = local(
-            'git push git+ssh://%s@%s:%s%s %s:refs/heads/master %s' % (
-                env.user, env.host, env.port, repo_path, commit, force))
+        with lcd(git_src):
+            print(local("echo pwd"))
+            push = local(
+                'git push git+ssh://%s@%s:%s%s %s:refs/heads/master %s' % (
+                    env.user, env.host, env.port, repo_path, commit, force))
 
     if push.failed:
         abort(
@@ -86,13 +93,13 @@ def git_seed(repo_path, commit=None, ignore_untracked_files=False):
             'gitric.api.force_push and add it to your call.' % commit)
 
 
-def git_reset(repo_path, commit=None):
+def git_reset(repo_path, commit=None, git_src=cwd):
     """
     reset the working directory to a specific commit [remote]
     """
 
     # use specified commit or HEAD
-    commit = commit or git_head_rev()
+    commit = commit or git_head_rev(git_src)
 
     puts(green('Resetting to commit ') + commit)
 
@@ -101,14 +108,15 @@ def git_reset(repo_path, commit=None):
         run('git reset --hard %s' % commit)
 
 
-def git_head_rev():
+def git_head_rev(git_src=cwd):
     """
     find the commit that is currently checked out [local]
     """
-    return local('git rev-parse HEAD', capture=True)
+    with lcd(git_src):
+        return local('git rev-parse HEAD', capture=True)
 
 
-def git_is_dirty(ignore_untracked_files):
+def git_is_dirty(ignore_untracked_files, git_src=cwd):
     """
     check if there are modifications in the repository [local]
     """
@@ -117,5 +125,6 @@ def git_is_dirty(ignore_untracked_files):
         return False
 
     untracked_files = '--untracked-files=no' if ignore_untracked_files else ''
-    return local(
-        'git status %s --porcelain' % untracked_files, capture=True) != ''
+    with lcd(git_src):
+        return local(
+            'git status %s --porcelain' % untracked_files, capture=True) != ''
